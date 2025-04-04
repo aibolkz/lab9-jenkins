@@ -20,6 +20,7 @@ if __name__ == "__main__":
     if os.stat(file).st_size == 0:
         print('File {} is empty, exiting'.format(file))
         sys.exit()
+
     READ_FILE = pd.read_csv('info.csv')
     ROUTERS = READ_FILE['Router'].to_list()
     MGM_IP = READ_FILE['Mgmt IP'].to_list()
@@ -34,17 +35,17 @@ if __name__ == "__main__":
     AREA = READ_FILE['OSPF Area'].to_list()
 
     cfg = '''
-	<config>
-	<cli-config-data>
-	<cmd> hostname %s </cmd>
-	<cmd> int %s </cmd>
-	<cmd> ip address %s %s </cmd>
-	<cmd> router ospf 1 </cmd>
-	<cmd> network %s %s area %s </cmd>
-	<cmd> network 198.51.100.0 0.0.0.255 area 0 </cmd>
-	</cli-config-data>
-	</config>
-	'''
+    <config>
+    <cli-config-data>
+    <cmd> hostname %s </cmd>
+    <cmd> int %s </cmd>
+    <cmd> ip address %s %s </cmd>
+    <cmd> router ospf 1 </cmd>
+    <cmd> network %s %s area %s </cmd>
+    <cmd> network 198.51.100.0 0.0.0.255 area 0 </cmd>
+    </cli-config-data>
+    </config>
+    '''
 
     for i in range(0, 5):
         connection = manager.connect(host=MGM_IP[i],
@@ -62,20 +63,16 @@ if __name__ == "__main__":
     print('\n------------------Configs to all routers is sent------------------\n')
 
     FETCH_INFO = '''
-    		<filter>
-    		<config-format-text-block>
-    		<text-filter-spec> %s </text-filter-spec>
-    		</config-format-text-block>
-    		</filter>
-    		'''
+    <filter>
+    <config-format-text-block>
+    <text-filter-spec> %s </text-filter-spec>
+    </config-format-text-block>
+    </filter>
+    '''
 
     for i in range(0, 5):
-    	print(f"Connecting to {ROUTERS[i]} at {MGM_IP[i]} with user {UNAME[i]}")
-
-
-
-	
-	connection = manager.connect(host=MGM_IP[i],
+        print(f"Connecting to {ROUTERS[i]} at {MGM_IP[i]} with user {UNAME[i]}")
+        connection = manager.connect(host=MGM_IP[i],
                                      port=22,
                                      username='admin',
                                      password='admin',
@@ -98,10 +95,8 @@ if __name__ == "__main__":
         fetch_ospf_info = FETCH_INFO % ('| s ospf')
         output3 = connection.get_config('running', fetch_ospf_info)
         split3 = str(output3).split()
-        lo_ip_prefix = str(ipaddress.ip_network(split3[9] + '/' + split3[10], strict=False)
-                           .prefixlen)
-        mgm_ip_prefix = str(ipaddress.ip_network(split3[14] + '/' + split3[15], strict=False)
-                            .prefixlen)
+        lo_ip_prefix = str(ipaddress.ip_network(split3[9] + '/' + split3[10], strict=False).prefixlen)
+        mgm_ip_prefix = str(ipaddress.ip_network(split3[14] + '/' + split3[15], strict=False).prefixlen)
         ospf_area = split3[12]
         ospf_networks = split3[9] + '/' + lo_ip_prefix, split3[14] + '/' + mgm_ip_prefix
 
