@@ -57,7 +57,7 @@ if __name__ == "__main__":
             hostkey_verify=False,
             device_params={'name': 'iosxr'},
             allow_agent=False,
-            look_for_keys=True
+            look_for_keys=False
         )
         print(f'Logging into router {routers[i]} and sending configurations')
         cfg1 = cfg % (host[i], lo_name[i], lo_ip[i], mask[i], networks[i], wildcard[i], area[i])
@@ -83,7 +83,7 @@ if __name__ == "__main__":
             hostkey_verify=False,
             device_params={'name': 'iosxr'},
             allow_agent=False,
-            look_for_keys=True
+            look_for_keys=False
         )
         print(f'Pulling information from router {routers[i]} to display')
 
