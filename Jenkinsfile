@@ -26,5 +26,18 @@ pipeline {
                 '''
             }
         }
+        stage('Run Application') {
+            steps {
+            echo 'Running netman_netconf_obj2.py...'
+                sh '''
+                    if [ ! -f netman_netconf_obj2.py ]; then
+                    echo "python file is not found!"
+                    exit 1
+                    fi
+                    python3 netman_netconf_obj2.py
+                '''
+    }
+}
+
     }
 }
