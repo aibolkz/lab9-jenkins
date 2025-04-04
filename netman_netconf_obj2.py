@@ -12,27 +12,27 @@ except Exception:
     sys.exit()
 
 if __name__ == "__main__":
-    TABLE = PrettyTable(['Router', 'Hostname', 'Loopback 99 IP', 'OSPF area', 'Advertised OSPF Networks'])
+    table = PrettyTable(['Router', 'Hostname', 'Loopback 99 IP', 'OSPF area', 'Advertised OSPF Networks'])
     file = 'info.csv'
     if not os.path.exists(file):
-        print("File {} not found, exiting".format(file))
+        print(f"File {file} not found, exiting")
         sys.exit()
     if os.stat(file).st_size == 0:
-        print('File {} is empty, exiting'.format(file))
+        print(f"File {file} is empty, exiting")
         sys.exit()
 
-    READ_FILE = pd.read_csv('info.csv')
-    ROUTERS = READ_FILE['Router'].to_list()
-    MGM_IP = READ_FILE['Mgmt IP'].to_list()
-    UNAME = READ_FILE['Username'].to_list()
-    PWD = READ_FILE['Password'].to_list()
-    HOST = READ_FILE['Hostname'].to_list()
-    LO_NAME = READ_FILE['Loopback Name'].to_list()
-    LO_IP = READ_FILE['Loopback IP'].to_list()
-    MASK = READ_FILE['Loopback Subnet'].to_list()
-    WILDCARD = READ_FILE['Wildcard'].to_list()
-    NETWORKS = READ_FILE['Network'].to_list()
-    AREA = READ_FILE['OSPF Area'].to_list()
+    read_file = pd.read_csv(file)
+    routers = read_file['Router'].to_list()
+    mgmt_ip = read_file['Mgmt IP'].to_list()
+    uname = read_file['Username'].to_list()
+    pwd = read_file['Password'].to_list()
+    host = read_file['Hostname'].to_list()
+    lo_name = read_file['Loopback Name'].to_list()
+    lo_ip = read_file['Loopback IP'].to_list()
+    mask = read_file['Loopback Subnet'].to_list()
+    wildcard = read_file['Wildcard'].to_list()
+    networks = read_file['Network'].to_list()
+    area = read_file['OSPF Area'].to_list()
 
     cfg = '''
     <config>
@@ -48,21 +48,24 @@ if __name__ == "__main__":
     '''
 
     for i in range(0, 5):
-        connection = manager.connect(host=MGM_IP[i],
-                                     port=22,
-                                     username=UNAME[i],
-                                     password=PWD[i],
-                                     hostkey_verify=False,
-                                     device_params={'name': 'iosxr'},
-                                     allow_agent=False,
-                                     look_for_keys=True)
-        print('Logging into router {} and sending configurations'.format(ROUTERS[i]))
-        cfg1 = cfg % (HOST[i], LO_NAME[i], LO_IP[i], MASK[i], NETWORKS[i], WILDCARD[i], AREA[i])
-        edit_cfg = connection.edit_config(target='running', config=cfg1)
+        print(f"Connecting to {routers[i]} at {mgmt_ip[i]} with user {uname[i]}")
+        connection = manager.connect(
+            host=mgmt_ip[i],
+            port=22,
+            username=uname[i],
+            password=pwd[i],
+            hostkey_verify=False,
+            device_params={'name': 'iosxr'},
+            allow_agent=False,
+            look_for_keys=True
+        )
+        print(f'Logging into router {routers[i]} and sending configurations')
+        cfg1 = cfg % (host[i], lo_name[i], lo_ip[i], mask[i], networks[i], wildcard[i], area[i])
+        connection.edit_config(target='running', config=cfg1)
 
     print('\n------------------Configs to all routers is sent------------------\n')
 
-    FETCH_INFO = '''
+    fetch_info = '''
     <filter>
     <config-format-text-block>
     <text-filter-spec> %s </text-filter-spec>
@@ -71,36 +74,38 @@ if __name__ == "__main__":
     '''
 
     for i in range(0, 5):
-        print(f"Connecting to {ROUTERS[i]} at {MGM_IP[i]} with user {UNAME[i]}")
-        connection = manager.connect(host=MGM_IP[i],
-                                     port=22,
-                                     username='admin',
-                                     password='admin',
-                                     hostkey_verify=False,
-                                     device_params={'name': 'iosxr'},
-                                     allow_agent=False,
-                                     look_for_keys=True)
-        print('Pulling information from router {} to display'.format(ROUTERS[i]))
+        print(f"Connecting to {routers[i]} at {mgmt_ip[i]} for fetching info")
+        connection = manager.connect(
+            host=mgmt_ip[i],
+            port=22,
+            username='admin',
+            password='admin',
+            hostkey_verify=False,
+            device_params={'name': 'iosxr'},
+            allow_agent=False,
+            look_for_keys=True
+        )
+        print(f'Pulling information from router {routers[i]} to display')
 
-        fetch_hostname = FETCH_INFO % ('| i hostname')
+        fetch_hostname = fetch_info % '| i hostname'
         output1 = connection.get_config('running', fetch_hostname)
         split1 = str(output1).split()
         hostname = split1[6]
 
-        fetch_lo_info = FETCH_INFO % ('int Loopback99')
+        fetch_lo_info = fetch_info % 'int Loopback99'
         output2 = connection.get_config('running', fetch_lo_info)
         split2 = str(output2).split()
         lo_ip_mask = split2[9] + '/' + str(IPAddress(split2[10]).netmask_bits())
 
-        fetch_ospf_info = FETCH_INFO % ('| s ospf')
+        fetch_ospf_info = fetch_info % '| s ospf'
         output3 = connection.get_config('running', fetch_ospf_info)
         split3 = str(output3).split()
         lo_ip_prefix = str(ipaddress.ip_network(split3[9] + '/' + split3[10], strict=False).prefixlen)
-        mgm_ip_prefix = str(ipaddress.ip_network(split3[14] + '/' + split3[15], strict=False).prefixlen)
+        mgmt_ip_prefix = str(ipaddress.ip_network(split3[14] + '/' + split3[15], strict=False).prefixlen)
         ospf_area = split3[12]
-        ospf_networks = split3[9] + '/' + lo_ip_prefix, split3[14] + '/' + mgm_ip_prefix
+        ospf_networks = f"{split3[9]}/{lo_ip_prefix}, {split3[14]}/{mgmt_ip_prefix}"
 
-        TABLE.add_row((ROUTERS[i], hostname, lo_ip_mask, ospf_area, ospf_networks))
+        table.add_row((routers[i], hostname, lo_ip_mask, ospf_area, ospf_networks))
 
     print('\n------------------Displaying the fetched information------------------\n')
-    print(TABLE)
+    print(table)
