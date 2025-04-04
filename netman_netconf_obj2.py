@@ -75,7 +75,7 @@ if __name__ == "__main__":
 
 
 	
-        connection = manager.connect(host=MGM_IP[i],
+	connection = manager.connect(host=MGM_IP[i],
                                      port=22,
                                      username='admin',
                                      password='admin',
