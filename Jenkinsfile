@@ -38,6 +38,14 @@ pipeline {
                 '''
     }
 }
+        stage('Unit Test') {
+            steps {
+            echo 'Running unit tests...'
+                sh '''
+                python3 -m unittest test_netman_lab9.py
+                '''
+    }
+}
 
     }
 }
