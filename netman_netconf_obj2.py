@@ -82,7 +82,7 @@ def netconf_config(file):
                     hostkey_verify=False,
                     allow_agent=False,
                     look_for_keys=False,
-                    timeout=5
+                    timeout=30
                 ) as m:
                     config_payload = f"""
                     <config>
